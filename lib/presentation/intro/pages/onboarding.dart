@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:velo/presentation/pages/login.dart';
+import 'package:velo/presentation/screens/login.dart';
+import 'package:velo/presentation/widgets/reusable_wdgts.dart';
+import 'package:velo/core/configs/theme/app_colors.dart';
 
 class GetStarted extends StatefulWidget {
   const GetStarted({super.key});
@@ -63,40 +65,25 @@ class _GetStartedState extends State<GetStarted> {
               final content = _contents[index];
               return Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 70),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 0),
                     Image.asset(
-                      'assets/images/logo.png', // Splash logo for onboarding
-                      height: 24,
+                      'assets/images/logo.png',
+                      height: 40,
                     ),
                     const SizedBox(height: 0),
-                    Text(
-                      content.title,
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFB42B2B),
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      content.subtitle,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                    ),
+                    CustomTitleText(text: content.title),
+                    const SizedBox(height: 0),
+                    CustomSubtitleText(text: content.subtitle),
                     Expanded(
                       child: Center(
                         child: Image.asset(
                           content.image,
-                          height: 300,
-                          width: 300,
+                          height: 400,
+                          width: 400,
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -121,7 +108,7 @@ class _GetStartedState extends State<GetStarted> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _currentPage == index
-                        ? const Color(0xFF4A1515)
+                        ? AppColors.primary
                         : Colors.grey.shade300,
                   ),
                 ),
@@ -132,23 +119,10 @@ class _GetStartedState extends State<GetStarted> {
             bottom: 30,
             left: 20,
             right: 20,
-            child: ElevatedButton(
-              onPressed: _onButtonPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A1515),
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                _contents[_currentPage].buttonText,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+            child: Center(
+              child: CustomButton(
+                text: _contents[_currentPage].buttonText,
+                onPressed: _onButtonPressed,
               ),
             ),
           ),

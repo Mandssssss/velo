@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:velo/presentation/intro/pages/getstarted.dart';
-import 'package:velo/presentation/pages/home.dart';
-import 'package:velo/presentation/pages/signup.dart';
+import 'package:velo/presentation/intro/pages/onboarding.dart';
+import 'package:velo/presentation/screens/home.dart';
+import 'package:velo/presentation/screens/signup.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -41,7 +41,6 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Display a logo for a brief time before going to the GetStarted screen
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.pushReplacementNamed(
           context, '/getstarted'); // Navigate to GetStarted
