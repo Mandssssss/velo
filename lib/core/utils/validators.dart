@@ -1,4 +1,6 @@
 class FormValidators {
+  static var validateEmail;
+
   // Validates if the password meets complexity requirements
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {

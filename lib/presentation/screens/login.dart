@@ -7,6 +7,7 @@ import 'package:velo/presentation/screens/signup.dart';
 import 'package:velo/presentation/widgets/reusable_wdgts.dart';
 import 'package:velo/data/sources/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -54,15 +55,31 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// 🔹 Google Sign-In
+  /// 🔹 Google Sign-In (Force Account Selection)
   void _signInWithGoogle() async {
     try {
-      UserCredential? user = await FirebaseServices().signInWithGoogle(context);
-      if (user != null && mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut(); // Ensure the user is signed out first
+
+      // Force the user to select an account
+      GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
         );
+
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+        if (userCredential.user != null && mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

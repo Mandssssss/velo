@@ -85,15 +85,19 @@ class _SignupState extends State<Signup> {
                   label: 'USERNAME',
                   controller: usernameController,
                   hintText: 'Enter your username',
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Username is required'
+                      : null,
                 ),
 
                 const SizedBox(height: 16),
 
-                // Email Input
+                // Email Input (with validation)
                 CustomInputField(
                   label: 'EMAIL',
                   controller: emailController,
                   hintText: 'Enter your email',
+                  validator: FormValidators.validateEmail,
                 ),
 
                 const SizedBox(height: 16),
@@ -115,6 +119,14 @@ class _SignupState extends State<Signup> {
                   controller: confirmPasswordController,
                   hintText: 'Re-enter your password',
                   obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Confirm password is required';
+                    } else if (value != passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 24),
