@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:velo/presentation/intro/pages/onboarding.dart';
 import 'package:velo/presentation/screens/home.dart';
 import 'package:velo/presentation/screens/signup.dart';
+import 'package:velo/presentation/screens/login.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Initialize Firebase
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ),
   );
+
   runApp(const MyApp());
 }
 
@@ -25,12 +32,12 @@ class MyApp extends StatelessWidget {
         primaryColor: const Color(0xFF672A2A),
         scaffoldBackgroundColor: Colors.grey[100],
       ),
-      initialRoute: '/', // Set Splash Screen as the first page
+      home: const SplashScreen(), // Start with SplashScreen
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/getstarted': (context) => const GetStarted(), // Call GetStarted page
+        '/getstarted': (context) => const GetStarted(),
         '/home': (context) => const HomePage(),
         '/signup': (context) => const Signup(),
+        '/login': (context) => const LoginPage(),
       },
     );
   }
@@ -42,8 +49,13 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(
-          context, '/getstarted'); // Navigate to GetStarted
+      // Check if user is already logged in
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        Navigator.pushReplacementNamed(context, '/home'); // Go to Home if logged in
+      } else {
+        Navigator.pushReplacementNamed(context, '/getstarted'); // Otherwise, Onboarding
+      }
     });
 
     return Scaffold(

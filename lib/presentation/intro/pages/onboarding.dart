@@ -43,7 +43,7 @@ class _GetStartedState extends State<GetStarted> {
       );
     } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const Login()),
+        MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     }
   }

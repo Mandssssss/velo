@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:velo/core/configs/theme/app_colors.dart';
 import 'package:velo/core/configs/theme/app_fonts.dart';
 import 'package:velo/presentation/screens/forgot_password.dart';
+import 'package:velo/presentation/screens/home.dart';
 import 'package:velo/presentation/screens/signup.dart';
 import 'package:velo/presentation/widgets/reusable_wdgts.dart';
 import 'package:velo/data/sources/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<Login> createState() => LoginState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class LoginState extends State<Login> {
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -25,13 +27,49 @@ class LoginState extends State<Login> {
     super.dispose();
   }
 
+  /// 🔹 Email & Password Login
   void _login() async {
     if (_formKey.currentState!.validate()) {
-      await AuthService.login(
-        context: context,
-        emailController: emailController,
-        passwordController: passwordController,
-      );
+      try {
+        await FirebaseServices.login(
+          context: context,
+          emailController: emailController,
+          passwordController: passwordController,
+        );
+        
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Login failed: $e")),
+          );
+        }
+      }
+    }
+  }
+
+  /// 🔹 Google Sign-In
+  void _signInWithGoogle() async {
+    try {
+      UserCredential? user = await FirebaseServices().signInWithGoogle(context);
+      if (user != null && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Google Sign-In failed: $e")),
+        );
+      }
     }
   }
 
@@ -60,7 +98,7 @@ class LoginState extends State<Login> {
 
                 const SizedBox(height: 16),
 
-                // Password Input with validation
+                // Password Input
                 CustomInputField(
                   label: 'PASSWORD',
                   controller: passwordController,
@@ -102,11 +140,11 @@ class LoginState extends State<Login> {
                 Center(child: CustomDivider()),
                 const SizedBox(height: 24),
 
-                // Google Login
+                // Google Sign-In Button
                 Center(
                   child: CustomButton(
                     text: 'With Google',
-                    onPressed: () {},
+                    onPressed: _signInWithGoogle,
                     iconPath: 'assets/images/Google.png',
                   ),
                 ),
