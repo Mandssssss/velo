@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,20 +14,22 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<String> timeSlots = [
-    '8:00AM', '9:00AM', '10:00AM', '11:00AM',
-    '12:00PM', '1:00PM', '2:00PM'
+    '8:00AM', '9:00AM', '10:00AM', '11:00AM', '12:00PM',
+    '1:00PM', '2:00PM', '3:00PM', '4:00PM', '5:00PM'
   ];
-  
+
   late DateTime selectedDate;
   int activities = 0;
   String time = '0h 0m';
   double distance = 0.0;
+  Map<String, String> plansByTime = {};
 
   @override
   void initState() {
     super.initState();
     selectedDate = DateTime.now();
     _fetchWeeklyProgress();
+    _fetchPlansForSelectedDate();
   }
 
   Future<void> _fetchWeeklyProgress() async {
@@ -35,7 +38,7 @@ class _HomePageState extends State<HomePage> {
       if (user != null) {
         final weekStart = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
         final weekEnd = weekStart.add(const Duration(days: 7));
-        
+
         final snapshot = await FirebaseFirestore.instance
             .collection('user_activities')
             .doc(user.uid)
@@ -58,6 +61,43 @@ class _HomePageState extends State<HomePage> {
       print('Error fetching weekly progress: $e');
     }
   }
+
+  Future<void> _fetchPlansForSelectedDate() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    try {
+      // Create the start and end of the selected day for comparison
+      final startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+      final endOfDay = startOfDay.add(Duration(days: 1));
+
+      // Query to get plans for the selected date
+      final snapshot = await FirebaseFirestore.instance
+          .collection('user_plans')
+          .doc(user.uid)
+          .collection('plans')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      setState(() {
+        plansByTime = {
+          for (var doc in snapshot.docs)
+            doc['time'] as String: doc['description'] as String
+        };
+      });
+    } catch (e) {
+      // Handle errors (e.g., network issues, permission issues)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error fetching plans: $e")),
+      );
+    }
+  } else {
+    // Handle the case where the user is not logged in
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("User not logged in")),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +170,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           Text(
             'Your Weekly Progress',
-            style: AppFonts.medium.copyWith(
+            style: AppFonts.light.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: Colors.black,
@@ -195,7 +235,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   DateFormat('MMMM yyyy').format(selectedDate),
-                  style: AppFonts.light.copyWith(
+                  style: AppFonts.medium.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
@@ -230,6 +270,7 @@ class _HomePageState extends State<HomePage> {
                     setState(() {
                       selectedDate = date;
                     });
+                    _fetchPlansForSelectedDate();
                   },
                   child: Container(
                     width: 50,
@@ -276,6 +317,8 @@ class _HomePageState extends State<HomePage> {
       child: ListView.builder(
         itemCount: timeSlots.length,
         itemBuilder: (context, index) {
+          final time = timeSlots[index];
+          final plan = plansByTime[time] ?? '';
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -283,12 +326,41 @@ class _HomePageState extends State<HomePage> {
                 bottom: BorderSide(color: Colors.grey[300]!),
               ),
             ),
-            child: Text(
-              timeSlots[index],
-              style: AppFonts.light.copyWith(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    time,
+                    style: AppFonts.light.copyWith(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showAddPlanDialog(time),
+                    child: Container(
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: plan.isNotEmpty ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Center(
+                        child: Text(
+                          plan.isNotEmpty ? plan : 'Add plan',
+                          style: AppFonts.regular.copyWith(
+                            fontSize: 12,
+                            color: plan.isNotEmpty ? Colors.black87 : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -312,4 +384,55 @@ class _HomePageState extends State<HomePage> {
       _fetchWeeklyProgress(); // Refresh the weekly progress
     }
   }
+
+  void _showAddPlanDialog(String time) {
+    final TextEditingController controller = TextEditingController(text: plansByTime[time] ?? '');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Add Plan for $time', style: AppFonts.regular.copyWith()),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: 'Enter your plan'),
+          style: AppFonts.regular.copyWith(),
+        ),
+        actions: [
+          TextButton(
+            child: Text('Cancel', style: AppFonts.light.copyWith()),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text('Save', style: AppFonts.light.copyWith()),
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                if (controller.text.isNotEmpty) {
+                  await FirebaseFirestore.instance
+                      .collection('user_plans')
+                      .doc(user.uid)
+                      .collection('plans')
+                      .doc('${selectedDate.toIso8601String()}_$time')
+                      .set({
+                    'date': Timestamp.fromDate(DateTime(selectedDate.year, selectedDate.month, selectedDate.day)),
+                    'time': time,
+                    'description': controller.text,
+                  });
+                } else {
+                  await FirebaseFirestore.instance
+                      .collection('user_plans')
+                      .doc(user.uid)
+                      .collection('plans')
+                      .doc('${selectedDate.toIso8601String()}_$time')
+                      .delete();
+                }
+                _fetchPlansForSelectedDate();
+              }
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
+

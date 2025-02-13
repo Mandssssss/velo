@@ -40,10 +40,24 @@ class _SignupState extends State<Signup> {
           passwordController: passwordController,
           confirmPasswordController: confirmPasswordController,
         );
+
+        // Navigate to Login Page after successful sign-up
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Signup successful! Please log in.")),
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Signup failed: $e")),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Signup failed: $e")),
+          );
+        }
       }
     }
   }
@@ -52,15 +66,22 @@ class _SignupState extends State<Signup> {
   void _signInWithGoogle() async {
     try {
       UserCredential? user = await FirebaseServices().signInWithGoogle(context);
-      if (user != null) {
+      if (user != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Signed in as ${user.user?.displayName}")),
         );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Google Sign-In failed: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Google Sign-In failed: $e")),
+        );
+      }
     }
   }
 
@@ -85,19 +106,15 @@ class _SignupState extends State<Signup> {
                   label: 'USERNAME',
                   controller: usernameController,
                   hintText: 'Enter your username',
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Username is required'
-                      : null,
                 ),
 
                 const SizedBox(height: 16),
 
-                // Email Input (with validation)
+                // Email Input
                 CustomInputField(
                   label: 'EMAIL',
                   controller: emailController,
                   hintText: 'Enter your email',
-                  validator: FormValidators.validateEmail,
                 ),
 
                 const SizedBox(height: 16),
@@ -119,14 +136,6 @@ class _SignupState extends State<Signup> {
                   controller: confirmPasswordController,
                   hintText: 'Re-enter your password',
                   obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Confirm password is required';
-                    } else if (value != passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
                 ),
 
                 const SizedBox(height: 24),
