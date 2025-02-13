@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:velo/core/configs/theme/app_colors.dart';
-import 'package:velo/core/utils/validators.dart';
 import 'package:velo/presentation/widgets/reusable_wdgts.dart';
 import 'package:velo/data/sources/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'home.dart';
 import 'login.dart';
 
 class Signup extends StatefulWidget {
@@ -29,7 +30,7 @@ class _SignupState extends State<Signup> {
     super.dispose();
   }
 
-  /// 🔹 Email & Password Signup
+  /// 🔹 Email & Password Signup with Validation
   void _signup() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -41,7 +42,6 @@ class _SignupState extends State<Signup> {
           confirmPasswordController: confirmPasswordController,
         );
 
-        // Navigate to Login Page after successful sign-up
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Signup successful! Please log in.")),
@@ -62,19 +62,28 @@ class _SignupState extends State<Signup> {
     }
   }
 
-  /// 🔹 Google Sign-Up
+  /// 🔹 Google Sign-Up (Force Account Selection)
   void _signInWithGoogle() async {
     try {
-      UserCredential? user = await FirebaseServices().signInWithGoogle(context);
-      if (user != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Signed in as ${user.user?.displayName}")),
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut(); // Ensure user selects an account
+
+      GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+        if (userCredential.user != null && mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -101,41 +110,73 @@ class _SignupState extends State<Signup> {
                 CustomTitleText(text: 'SIGN UP'),
                 const SizedBox(height: 2),
 
-                // Username Input
+                // Username Input with Validation
                 CustomInputField(
                   label: 'USERNAME',
                   controller: usernameController,
                   hintText: 'Enter your username',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Username is required';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),
 
-                // Email Input
+                // Email Input with Validation
                 CustomInputField(
                   label: 'EMAIL',
                   controller: emailController,
                   hintText: 'Enter your email',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email is required';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return 'Enter a valid email';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),
 
-                // Password Input
+                // Password Input with Validation
                 CustomInputField(
                   label: 'PASSWORD',
                   controller: passwordController,
                   hintText: 'Enter your password',
                   obscureText: true,
-                  validator: FormValidators.validatePassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password is required';
+                    }
+                    if (value.length < 8) {
+                      return 'Password must be at least 8 characters';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),
 
-                // Confirm Password Input
+                // Confirm Password Input with Validation
                 CustomInputField(
                   label: 'CONFIRM PASSWORD',
                   controller: confirmPasswordController,
                   hintText: 'Re-enter your password',
                   obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Confirm password is required';
+                    }
+                    if (value != passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 24),

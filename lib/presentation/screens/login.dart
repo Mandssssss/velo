@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
           emailController: emailController,
           passwordController: passwordController,
         );
-        
+
         User? user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           Navigator.pushReplacement(
@@ -61,12 +61,11 @@ class _LoginPageState extends State<LoginPage> {
       final GoogleSignIn googleSignIn = GoogleSignIn();
       await googleSignIn.signOut(); // Ensure the user is signed out first
 
-      // Force the user to select an account
       GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      
+
       if (googleUser != null) {
         final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        
+
         final OAuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
@@ -106,21 +105,39 @@ class _LoginPageState extends State<LoginPage> {
                 CustomTitleText(text: 'LOGIN'),
                 const SizedBox(height: 32),
 
-                // Email Input
+                // Email Input with Validation
                 CustomInputField(
                   label: 'EMAIL',
                   controller: emailController,
                   hintText: 'ENTER EMAIL',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email is required';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return 'Enter a valid email';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),
 
-                // Password Input
+                // Password Input with Validation
                 CustomInputField(
                   label: 'PASSWORD',
                   controller: passwordController,
                   hintText: 'ENTER PASSWORD',
                   obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password is required';
+                    }
+                    if (value.length < 8) {
+                      return 'Password must be at least 8 characters';
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 2),
