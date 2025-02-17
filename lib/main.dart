@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:velo/presentation/intro/pages/onboarding.dart';
-import 'package:velo/presentation/screens/home.dart';
 import 'package:velo/presentation/screens/signup.dart';
 import 'package:velo/presentation/screens/login.dart';
+import 'package:velo/services/brevo_service.dart'; // Import the Brevo service
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +62,40 @@ class SplashScreen extends StatelessWidget {
       body: Center(
         child: Image.asset('assets/images/logo.png',
             width: 150, height: 150), // Splash logo
+      ),
+    );
+  }
+}
+
+// Update HomePage to include a button to send an email
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final BrevoService brevoService = BrevoService(); // Create instance
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Home")),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () async {
+            bool success = await brevoService.sendEmail(
+              "recipient@example.com",
+              "Welcome to Velo!",
+              "This is a test email from Velo using Brevo API!"
+            );
+
+            // Show a Snackbar based on the email result
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(success ? "✅ Email Sent!" : "❌ Failed to Send Email"),
+                backgroundColor: success ? Colors.green : Colors.red,
+              ),
+            );
+          },
+          child: const Text("Send Test Email"),
+        ),
       ),
     );
   }
